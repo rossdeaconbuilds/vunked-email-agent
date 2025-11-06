@@ -1,0 +1,23 @@
+# Output directory
+output/
+
+# Node modules (if using Node.js in future)
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+

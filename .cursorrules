@@ -1,0 +1,78 @@
+# Vunked Email Agent - Cursor Rules
+
+## Project Overview
+This is a file repository for Vunked email generation. The AI agent reads brand guidelines, selects templates, and generates HTML emails from blog/informational text.
+
+## Key Files
+- `brand-guidelines.md` - ALWAYS read this before generating emails. Contains all brand colors, typography, voice, mission, and contact information.
+- `templates/simple.html` - Simple single-column email template
+- `templates/newsletter.html` - Newsletter-style template with gradient hero
+- `content/` - Contains blog text files to be converted to emails
+
+## Brand Guidelines (Critical)
+ALWAYS consult `brand-guidelines.md` before generating any email. Key brand elements:
+
+### Colors
+- Primary: Burnt Orange (#E76F51), Navy Blue (#264653), White (#FFFFFF)
+- Accent: Blue lighter (#366476), Blue lightest (#468299)
+
+### Typography
+- Font: Montserrat (Arial fallback)
+- H1: 36px, H2: 28px, Body: 16px
+
+### Brand Voice
+- Friendly, knowledgeable, and approachable
+- Helpful and patient
+- Focus on educating and empowering customers
+- Tone: "We're here to make your campervan electrics stress-free. Let's build something amazing together!"
+
+### Contact
+- Email: hello@vunked.co.uk
+
+## CRITICAL RULE: Never Modify Templates
+**NEVER edit files in the `templates/` directory directly. Templates must remain unchanged.**
+
+**Always follow this process:**
+1. **Copy template to output** - Copy the template file from `templates/` to `output/` with a descriptive filename
+2. **Modify the copy** - Only edit the file in the `output/` directory
+3. **Keep templates intact** - Templates serve as reusable master files
+
+## Email Generation Process
+When generating an email:
+
+1. **Read brand guidelines** - Always reference brand-guidelines.md first
+2. **Read blog text** - Read the specified file from content/ directory (if provided)
+3. **Select template** - Choose 'simple' or 'newsletter' based on content length/complexity
+4. **Copy template to output** - Copy the template file to output/ folder first
+5. **Parse content** - Split into intro, body, conclusion sections (if blog text provided)
+6. **Extract title** - Create or extract appropriate heading
+7. **Apply brand voice** - Ensure content matches Vunked's friendly, knowledgeable tone
+8. **Generate CTA** - Suggest appropriate call-to-action if relevant
+9. **Populate the copy** - Replace placeholders in the output file only: {{title}}, {{intro}}, {{body}}, {{conclusion}}, {{cta_text}}
+10. **Output HTML** - Provide complete HTML email ready for Klaviyo
+
+## Template Placeholders
+Templates use these placeholders that must be replaced:
+- `{{title}}` - Email heading/title
+- `{{intro}}` - Introduction section (first 1-2 paragraphs)
+- `{{body}}` - Main body content (middle sections)
+- `{{conclusion}}` - Conclusion section (final paragraph)
+- `{{cta_text}}` - Call-to-action button text (can be empty if not needed)
+
+## Content Parsing Guidelines
+- **Intro**: First 1-2 paragraphs or up to ~200 words
+- **Body**: Middle sections with main content
+- **Conclusion**: Final paragraph(s) or last ~150 words
+- Handle edge cases (short content, single paragraph)
+
+## Email Best Practices
+- Use inline CSS only (no external stylesheets)
+- Table-based layouts for email client compatibility
+- Montserrat font via Google Fonts link with Arial fallback
+- Ensure Klaviyo-compatible HTML structure
+- Maintain brand colors and typography throughout
+- Keep friendly, empowering tone in all content
+
+## Output
+Generated emails should be saved to `output/` directory with descriptive filenames, or provided directly in the conversation for copy/paste into Klaviyo.
+
