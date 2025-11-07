@@ -1,0 +1,24 @@
+{
+  "name": "vunked-email-agent",
+  "version": "1.0.0",
+  "description": "AI-powered email generation from blog content using OpenAI",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["email", "ai", "openai", "blog", "automation"],
+  "author": "Vunked",
+  "license": "ISC",
+  "dependencies": {
+    "openai": "^4.72.0",
+    "jsdom": "^25.0.1",
+    "@mozilla/readability": "^0.6.0",
+    "html-to-text": "^9.0.5",
+    "yargs": "^17.7.2",
+    "slugify": "^1.6.6",
+    "dotenv": "^16.4.5"
+  }
+}
+
