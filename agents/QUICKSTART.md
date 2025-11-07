@@ -45,9 +45,9 @@ INPUT (URL/Text/Prompt)
   ↓
 RETRIEVE → Clean blog content
   ↓
-PLAN → AI creates email structure (o3-mini)
+PLAN → AI creates email structure (gpt-5 via Responses API)
   ↓
-WRITE → AI fills sections with content (gpt-5-mini)
+WRITE → AI fills sections with content (gpt-4.1-nano)
   ↓
 OUTPUT → HTML + Text files
 ```
@@ -74,21 +74,21 @@ node index.js --prompt "..." --sections ../sections --out ../campaigns
 Edit `.env` to change defaults:
 ```bash
 OPENAI_API_KEY=sk-...
-MODEL_PLAN=o3-mini-2025-01-31  # Model for planning
-MODEL_WRITE=gpt-5-mini         # Model for content generation
+MODEL_PLAN=gpt-5               # Planner model (Responses API)
+MODEL_WRITE=gpt-4.1-nano       # Writer model
 ```
 
 Or override via CLI:
 ```bash
-node index.js --prompt "..." --modelPlan gpt-4o --modelWrite gpt-4o-mini
+node index.js --prompt "..." --modelPlan gpt-4.1 --modelWrite gpt-4o-mini
 ```
 
 ## 🐛 Troubleshooting
 
 **"Model not found"**
-- If `o3-mini-2025-01-31` or `gpt-5-mini` are not available
-- System auto-falls back to `gpt-4o-mini`
-- Specify working models: `--modelPlan gpt-4o-mini --modelWrite gpt-4o-mini`
+- Ensure you have access to `gpt-5` on the Responses API (required for planning)
+- The planner automatically falls back to `gpt-4o-mini` if `gpt-5` is unavailable
+- Override with working models, e.g. `--modelPlan gpt-4.1 --modelWrite gpt-4o-mini`
 
 **"OPEN_API_KEY_CURSOR or OPENAI_API_KEY not set"**
 - If using global variables, ensure `OPEN_API_KEY_CURSOR` is exported in your shell

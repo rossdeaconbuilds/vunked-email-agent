@@ -1,6 +1,45 @@
 import OpenAI from 'openai';
 import { validatePlan } from './utils.js';
 
+const SECTION_LIBRARY = {
+  hero: {
+    category: 'General',
+    summary: 'Hero banner with headline, supporting copy, and CTA. Always the first section.'
+  },
+  'simple-body': {
+    category: 'Educational',
+    summary: 'Flexible content blocks for storytelling, guides, and updates. Use 2-4 per email.'
+  },
+  'six-summary-cards': {
+    category: 'Educational',
+    summary: 'Six-card grid for summarising key takeaways. Use when content is an educational guide or insights list.'
+  },
+  'selling-points-what-you-get': {
+    category: 'Product',
+    summary: 'Three benefit cards that spotlight what customers receive. Ideal for product launches, offers, or kit promotions.'
+  },
+  'social-media-van-conversions': {
+    category: 'Social Proof',
+    summary: 'Community spotlight cards featuring social posts. Use to build trust or highlight real installations.'
+  },
+  'book-a-call': {
+    category: 'General CTA',
+    summary: 'Consultation CTA for readers ready to speak with Vunked. Place near the end for sales-oriented emails.'
+  },
+  contact: {
+    category: 'General',
+    summary: 'Standard contact information block. Include when closing with next steps or support.'
+  },
+  signature: {
+    category: 'General',
+    summary: 'Friendly sign-off from the Vunked team. Always place before the footer.'
+  },
+  footer: {
+    category: 'General',
+    summary: 'Legal footer with company info and unsubscribe links. Always the final section.'
+  }
+};
+
 /**
  * Create email plan using OpenAI Responses API
  * @param {Object} blogData - Blog content with title and text
@@ -10,14 +49,18 @@ import { validatePlan } from './utils.js';
  * @param {string} sourceUrl - Original blog URL if available
  * @returns {Promise<Object>} Plan object with subject, preview, sequence, and slots
  */
-export async function createPlan(blogData, brandGuidelines, availableSections, model = 'o3-mini-2025-01-31', sourceUrl = null) {
+export async function createPlan(blogData, brandGuidelines, availableSections, model = 'gpt-5', sourceUrl = null) {
   const apiKey = process.env.OPEN_API_KEY_CURSOR || process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
     throw new Error('OPEN_API_KEY_CURSOR or OPENAI_API_KEY environment variable is not set');
   }
   
-  const openai = new OpenAI({ apiKey });
+  const openai = new OpenAI({
+    apiKey,
+    timeout: 60_000,
+    maxRetries: 1
+  });
   
   // Build the prompt
   const prompt = buildPlanPrompt(blogData, brandGuidelines, availableSections, sourceUrl);
@@ -111,35 +154,48 @@ export async function createPlan(blogData, brandGuidelines, availableSections, m
     additionalProperties: false
   };
   
-  try {
-    console.log(`Calling OpenAI Responses API with model: ${model}`);
-    
-    // Call OpenAI API with response format
-    const completion = await openai.chat.completions.create({
-      model: model,
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert email marketing strategist. Generate structured email plans in JSON format based on blog content and brand guidelines."
+  const systemPrompt = "You are an expert email marketing strategist. Generate structured email plans in JSON format based on blog content and brand guidelines.";
+
+  const attemptPlan = async (modelName) => {
+    console.log(`Calling OpenAI Responses API with model: ${modelName}`);
+    console.log(`  Prompt length: ${prompt.length} characters`);
+
+    const timerLabel = `plan:openai_request (${modelName})`;
+    console.time(timerLabel);
+    try {
+      const completion = await openai.responses.create({
+        model: modelName,
+        input: `${systemPrompt}\n\n${prompt}`,
+        text: {
+          format: {
+            name: "email_plan",
+            type: "json_schema",
+            schema: schema,
+            strict: true
+          }
         },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "email_plan",
-          strict: true,
-          schema: schema
-        }
-      },
-      temperature: 0.7
-    });
-    
-    const responseText = completion.choices[0].message.content;
-    const plan = JSON.parse(responseText);
+        max_output_tokens: 4000
+      });
+      console.timeEnd(timerLabel);
+      
+      // Debug: log the raw response structure
+      console.log('Raw response keys:', Object.keys(completion));
+      console.log('output_text type:', typeof completion.output_text);
+      console.log('output_text value:', completion.output_text ? completion.output_text.substring(0, 200) : 'null/undefined');
+      if (completion.output) {
+        console.log('Output structure:', JSON.stringify(completion.output, null, 2).substring(0, 500));
+      }
+      if (completion.text) {
+        console.log('Text field:', JSON.stringify(completion.text, null, 2).substring(0, 500));
+      }
+
+      const responseText = extractResponseText(completion);
+      if (!responseText) {
+        console.log('Extraction failed. Full response:', JSON.stringify(completion, null, 2).substring(0, 1000));
+        throw new Error('Empty response from plan model');
+      }
+
+      const plan = JSON.parse(responseText);
 
     // Normalize slot keys to match section filenames
     const slotKeyMap = {
@@ -255,16 +311,27 @@ export async function createPlan(blogData, brandGuidelines, availableSections, m
       }
     }
     
-    console.log('✓ Email plan generated successfully');
-    console.log(`  Subject: ${plan.subject}`);
-    console.log(`  Sections: ${plan.sequence.join(' → ')}`);
-    
-    return plan;
-    
+      console.log('✓ Email plan generated successfully');
+      console.log(`  Subject: ${plan.subject}`);
+      console.log(`  Sections: ${plan.sequence.join(' → ')}`);
+
+      return plan;
+    } catch (error) {
+      try {
+        console.timeEnd(timerLabel);
+      } catch (_) {
+        // ignore timer errors (already ended or timer not started)
+      }
+      throw error;
+    }
+  };
+
+  try {
+    return await attemptPlan(model);
   } catch (error) {
-    if (error.message.includes('model') || error.message.includes('does not exist')) {
-      console.warn(`Model ${model} not available, falling back to gpt-4o-mini`);
-      return createPlan(blogData, brandGuidelines, availableSections, 'gpt-4o-mini', sourceUrl);
+    if (isModelUnavailableError(error) && model !== 'gpt-4o-mini') {
+      console.warn(`Model ${model} not available on Responses API, falling back to gpt-4o-mini`);
+      return await attemptPlan('gpt-4o-mini');
     }
     throw new Error(`Failed to create plan: ${error.message}`);
   }
@@ -278,6 +345,13 @@ function buildPlanPrompt(blogData, brandGuidelines, availableSections, sourceUrl
   const ctaGuidance = sourceUrl 
     ? `- Use source URL (${sourceUrl}) for the hero CTA if promoting the blog post`
     : `- Use https://builder.vunked.com for product/system emails, or https://vunked.com/ for general promotional emails`;
+  const sectionDetails = availableSections.map(sectionName => {
+    const meta = SECTION_LIBRARY[sectionName];
+    if (!meta) {
+      return `- ${sectionName}`;
+    }
+    return `- ${sectionName} [${meta.category}]: ${meta.summary}`;
+  });
   
   return `
 # Task: Generate Email Plan
@@ -294,7 +368,20 @@ ${blogData.blog_text.substring(0, 3000)}${blogData.blog_text.length > 3000 ? '..
 ${brandGuidelines.substring(0, 2000)}
 
 ## Available Email Sections
-${availableSections.map(s => `- ${s}`).join('\n')}
+${sectionDetails.join('\n')}
+
+### Section Categories & When To Use Them
+- **Educational:** Share guides, how-tos, technical explainers, or multi-step stories.
+- **Product:** Highlight offers, benefits, kits, or reasons to buy Vunked products.
+- **Social Proof:** Feature customer success, community builds, testimonials, or social content.
+- **General / Always-On:** Infrastructure pieces (hero, signature, footer, contact) that frame the narrative and close the email.
+
+### Selection Guidelines
+- Always start with **hero**, end with **signature** followed by **footer**. Include **contact** for support-focused or resource-heavy sends.
+- Evaluate the blog content and goal: choose the mix of Educational, Product, and Social Proof sections that best support the message.
+- Prioritise at least one **Social Proof** block (e.g., social-media-van-conversions) when celebrating community builds or customer outcomes.
+- Use **selling-points-what-you-get** whenever the email promotes Vunked kits, services, or a new product push.
+- Combine Educational + Product blocks for mixed-goal emails (e.g., blog recap with a kit upsell). The sequence should tell a cohesive story.
 
 ### Section Types:
 - **hero**: Dynamic hero section with title, subtitle, and CTA button
@@ -349,5 +436,63 @@ ${ctaGuidance}
 
 Generate the email plan as valid JSON matching the schema.
 `.trim();
+}
+
+function extractResponseText(response) {
+  if (!response) {
+    return '';
+  }
+
+  // Check for direct output_text field
+  if (typeof response.output_text === 'string' && response.output_text.trim().length > 0) {
+    return response.output_text;
+  }
+
+  // Check for text field (some responses use this)
+  if (typeof response.text === 'string' && response.text.trim().length > 0) {
+    return response.text;
+  }
+
+  // Check for output array with content blocks
+  if (Array.isArray(response.output)) {
+    const parts = [];
+    for (const item of response.output) {
+      // Handle direct text in output item
+      if (typeof item.text === 'string') {
+        parts.push(item.text);
+        continue;
+      }
+      
+      // Handle content array
+      if (Array.isArray(item.content)) {
+        for (const content of item.content) {
+          if (typeof content.text === 'string') {
+            parts.push(content.text);
+          }
+        }
+      }
+    }
+    if (parts.length > 0) {
+      return parts.join('');
+    }
+  }
+
+  // Check for choices array (fallback for chat-style responses)
+  if (Array.isArray(response.choices) && response.choices.length > 0) {
+    const firstChoice = response.choices[0];
+    if (firstChoice.message && typeof firstChoice.message.content === 'string') {
+      return firstChoice.message.content;
+    }
+  }
+
+  return '';
+}
+
+function isModelUnavailableError(error) {
+  if (!error || typeof error.message !== 'string') {
+    return false;
+  }
+  const message = error.message.toLowerCase();
+  return message.includes('model') && (message.includes('not found') || message.includes('does not exist') || message.includes('unavailable'));
 }
 

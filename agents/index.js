@@ -50,14 +50,14 @@ async function generateEmail(input, options = {}) {
     // Step 2: PLAN
     console.log('🎯 STEP 2: PLAN');
     console.log('-'.repeat(60));
-    const modelPlan = options.modelPlan || process.env.MODEL_PLAN || 'o3-mini-2025-01-31';
+    const modelPlan = options.modelPlan || process.env.MODEL_PLAN || 'gpt-5';
     const plan = await createPlan(blogData, brandGuidelines, availableSections, modelPlan, input.url);
     console.log();
     
     // Step 3: WRITE + ASSEMBLE
     console.log('✍️  STEP 3: WRITE + ASSEMBLE');
     console.log('-'.repeat(60));
-    const modelWrite = options.modelWrite || process.env.MODEL_WRITE || 'gpt-5-mini';
+    const modelWrite = options.modelWrite || process.env.MODEL_WRITE || 'gpt-4.1-nano';
     const result = await writeAndAssemble(plan, brandGuidelines, sectionsDir, modelWrite);
     console.log();
     
@@ -142,11 +142,11 @@ async function main() {
     })
     .option('modelPlan', {
       type: 'string',
-      description: 'Model for planning step (default: o3-mini)'
+      description: 'Model for planning step (default: gpt-5)'
     })
     .option('modelWrite', {
       type: 'string',
-      description: 'Model for writing step (default: gpt-5-mini)'
+      description: 'Model for writing step (default: gpt-4.1-nano)'
     })
     .check((argv) => {
       if (!argv.url && !argv.text && !argv.prompt) {

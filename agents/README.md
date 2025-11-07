@@ -49,8 +49,8 @@ node index.js --prompt "make a black friday email"
 - `--prompt <prompt>` - Generate from prompt
 - `--sections <path>` - Path to sections directory (default: `sections`)
 - `--out <path>` - Output directory (default: `output`)
-- `--modelPlan <model>` - Model for planning step (default: `o3-mini-2025-01-31`)
-- `--modelWrite <model>` - Model for writing step (default: `gpt-5-mini`)
+- `--modelPlan <model>` - Model for planning step (default: `gpt-5`)
+- `--modelWrite <model>` - Model for writing step (default: `gpt-4.1-nano`)
 
 ## How It Works
 
@@ -60,7 +60,7 @@ node index.js --prompt "make a black friday email"
 - Strips navigation, ads, and other non-content elements
 
 ### 2. PLAN
-- Uses OpenAI Responses API with `o3-mini` model
+- Uses the OpenAI **Responses** API with the `gpt-5` model (required – do not switch back to Chat Completions)
 - Creates structured JSON plan based on:
   - Blog content
   - Brand guidelines (`brand-guidelines.md`)
@@ -68,7 +68,7 @@ node index.js --prompt "make a black friday email"
 - Outputs: subject, preview, section sequence, content slots
 
 ### 3. WRITE + ASSEMBLE
-- Uses OpenAI Responses API with `gpt-5-mini` model
+- Uses OpenAI Responses API–friendly models (default `gpt-4.1-nano`) for any dynamic copy generation
 - Processes dynamic sections (hero, simple-body)
 - Leaves static sections unchanged (contact, signature, footer, book-a-call)
 - Assembles complete HTML email
@@ -100,8 +100,8 @@ OPEN_API_KEY_CURSOR=your_api_key_here  # Preferred, matches your global variable
 OPENAI_API_KEY=your_api_key_here       # Alternative
 
 # Model Configuration (Optional)
-MODEL_PLAN=o3-mini-2025-01-31          # Default model for planning
-MODEL_WRITE=gpt-5-mini                 # Default model for writing
+MODEL_PLAN=gpt-5                       # Default model for planning (Responses API only)
+MODEL_WRITE=gpt-4.1-nano               # Default model for writing
 
 # Debugging (Optional)
 DEBUG=1                                # Show full error stack traces
