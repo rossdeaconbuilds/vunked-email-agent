@@ -1,6 +1,12 @@
 import OpenAI from 'openai';
 import { JSDOM } from 'jsdom';
 import { readSections, htmlToText } from './utils.js';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Write and assemble final email HTML
@@ -217,48 +223,10 @@ async function processSixSummaryCards(cardsHtml, cardsData, openai, model, brand
  * Assemble all sections into complete email HTML
  */
 function assembleEmail(sections, sequence) {
-  // Email wrapper with proper DOCTYPE and structure
-  const emailStart = `<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:v="urn:schemas-microsoft-com:vml">
-<head>
-    <title>Vunked Email</title>
-<!--[if !mso]><!-->
-<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
-<!--<![endif]-->
-<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
-<meta content="width=device-width, initial-scale=1" name="viewport"/>
-<!--[if mso]>
-<noscript>
-<xml>
-<o:OfficeDocumentSettings>
-<o:AllowPNG/>
-<o:PixelsPerInch>96</o:PixelsPerInch>
-</o:OfficeDocumentSettings>
-</xml>
-</noscript>
-<![endif]-->
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-  body { margin: 0; padding: 0; font-family: 'Montserrat', Arial, sans-serif; }
-  table { border-collapse: collapse; }
-  img { border: 0; }
-</style>
-</head>
-<body style="margin:0;padding:0;background-color:#F5F5F5;">
-
-<!-- Main Container -->
-<table align="center" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background-color:#ffffff;">
-<tr>
-<td>
-`;
-
-  const emailEnd = `
-</td>
-</tr>
-</table>
-
-</body>
-</html>`;
+  // Read email wrapper sections
+  const sectionsDir = join(__dirname, '..', 'sections');
+  const emailStart = readFileSync(join(sectionsDir, 'email-wrapper-start.html'), 'utf-8');
+  const emailEnd = readFileSync(join(sectionsDir, 'email-wrapper-end.html'), 'utf-8');
 
   // Concatenate all sections in sequence
   const sectionsHtml = sequence
