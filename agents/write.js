@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
  * @param {string} model - Model to use for content generation (default: gpt-5-mini)
  * @returns {Promise<{subject: string, preview: string, html: string, text_version: string}>}
  */
-export async function writeAndAssemble(plan, brandGuidelines, sectionsDir = 'sections', model = 'gpt-5-mini') {
+export async function writeAndAssemble(plan, brandGuidelines, sectionsDir = 'sections', model = 'gpt-5') {
   const apiKey = process.env.OPEN_API_KEY_CURSOR || process.env.OPENAI_API_KEY;
   
   if (!apiKey) {

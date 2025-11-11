@@ -6,6 +6,26 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+export const LINK_DIRECTORY = Object.freeze({
+  builder: 'https://builder.vunked.com',
+  book_call: 'https://cal.com/vunked/free-campervan-electrics-consultation-email',
+  homepage: 'https://www.vunked.com',
+  blog: 'https://vunked.com/blog'
+});
+
+/**
+ * Resolve an approved link by key.
+ * @param {keyof typeof LINK_DIRECTORY} key
+ * @returns {string}
+ */
+export function resolveLink(key) {
+  const link = LINK_DIRECTORY[key];
+  if (!link) {
+    throw new Error(`Unknown link key: ${key}`);
+  }
+  return link;
+}
+
 /**
  * Read a file from the project root
  */

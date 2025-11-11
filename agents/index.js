@@ -3,7 +3,8 @@
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import { retrieveContent } from './retrieve.js';
-import { createPlan } from './plan.js';
+import { createStructure } from './structure.js';
+import { generateCopy } from './copy.js';
 import { writeAndAssemble } from './write.js';
 import { readFile, writeFile, getAvailableSections, createSlug, getTimestamp } from './utils.js';
 import dotenv from 'dotenv';
@@ -47,17 +48,24 @@ async function generateEmail(input, options = {}) {
     console.log(`✓ Found ${availableSections.length} section templates`);
     console.log();
     
-    // Step 2: PLAN
-    console.log('🎯 STEP 2: PLAN');
+    // Step 2: STRUCTURE
+    console.log('🏗️  STEP 2: STRUCTURE');
     console.log('-'.repeat(60));
-    const modelPlan = options.modelPlan || process.env.MODEL_PLAN || 'gpt-5';
-    const plan = await createPlan(blogData, brandGuidelines, availableSections, modelPlan, input.url);
+    const modelStructure = options.modelStructure || process.env.MODEL_STRUCTURE || 'gpt-4o-mini';
+    const structure = await createStructure(blogData, brandGuidelines, availableSections, modelStructure, input.url);
     console.log();
     
-    // Step 3: WRITE + ASSEMBLE
-    console.log('✍️  STEP 3: WRITE + ASSEMBLE');
+    // Step 3: COPY
+    console.log('✍️  STEP 3: COPY');
     console.log('-'.repeat(60));
-    const modelWrite = options.modelWrite || process.env.MODEL_WRITE || 'gpt-4.1-nano';
+    const modelCopy = options.modelCopy || process.env.MODEL_COPY || 'gpt-4.1';
+    const plan = await generateCopy(structure, blogData, brandGuidelines, modelCopy, input.url);
+    console.log();
+    
+    // Step 4: ASSEMBLE
+    console.log('🔧 STEP 4: ASSEMBLE');
+    console.log('-'.repeat(60));
+    const modelWrite = options.modelWrite || process.env.MODEL_WRITE || 'gpt-5';
     const result = await writeAndAssemble(plan, brandGuidelines, sectionsDir, modelWrite);
     console.log();
     
@@ -140,13 +148,17 @@ async function main() {
       default: 'output',
       description: 'Output directory for generated files'
     })
-    .option('modelPlan', {
+    .option('modelStructure', {
       type: 'string',
-      description: 'Model for planning step (default: gpt-5)'
+      description: 'Model for structure step (default: gpt-4o-mini)'
+    })
+    .option('modelCopy', {
+      type: 'string',
+      description: 'Model for copy generation step (default: gpt-4.1)'
     })
     .option('modelWrite', {
       type: 'string',
-      description: 'Model for writing step (default: gpt-4.1-nano)'
+      description: 'Model for assembly step (default: gpt-5)'
     })
     .check((argv) => {
       if (!argv.url && !argv.text && !argv.prompt) {
@@ -169,7 +181,8 @@ async function main() {
   const options = {
     sections: argv.sections,
     out: argv.out,
-    modelPlan: argv.modelPlan,
+    modelStructure: argv.modelStructure,
+    modelCopy: argv.modelCopy,
     modelWrite: argv.modelWrite
   };
   

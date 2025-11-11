@@ -49,7 +49,7 @@ const SECTION_LIBRARY = {
  * @param {string} sourceUrl - Original blog URL if available
  * @returns {Promise<Object>} Plan object with subject, preview, sequence, and slots
  */
-export async function createPlan(blogData, brandGuidelines, availableSections, model = 'gpt-5', sourceUrl = null) {
+export async function createPlan(blogData, brandGuidelines, availableSections, model = 'gpt-5-mini', sourceUrl = null) {
   const apiKey = process.env.OPEN_API_KEY_CURSOR || process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
@@ -58,7 +58,7 @@ export async function createPlan(blogData, brandGuidelines, availableSections, m
   
   const openai = new OpenAI({
     apiKey,
-    timeout: 60_000,
+    timeout: 120_000,
     maxRetries: 1
   });
   
